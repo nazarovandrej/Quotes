@@ -1,6 +1,7 @@
 package com.github.andrejnazarov.quotes;
 
 import android.content.DialogInterface;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.TextInputEditText;
 import android.support.v4.view.ViewPager;
@@ -11,6 +12,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.Toast;
@@ -18,6 +20,8 @@ import android.widget.Toast;
 import com.github.andrejnazarov.quotes.adapter.QuotesPagerAdapter;
 import com.github.andrejnazarov.quotes.bean.Quote;
 import com.github.andrejnazarov.quotes.utils.Utils;
+
+import io.realm.Realm;
 
 public class MainActivity extends AppCompatActivity implements
         QuotesServerFragment.OnQuoteServerClickListener,
@@ -27,11 +31,13 @@ public class MainActivity extends AppCompatActivity implements
     private TabLayout mTabLayout;
     private ViewPager mViewPager;
     private QuotesPagerAdapter mPagerAdapter;
+    private Realm mRealm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mRealm = Realm.getInstance(this);
         mPagerAdapter = new QuotesPagerAdapter(getSupportFragmentManager());
         initUI();
     }
@@ -53,14 +59,45 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onQuoteServerClick(Quote quote) {
-        Toast.makeText(getApplicationContext(), "quote is " + quote.getQuote(), Toast.LENGTH_LONG).show();
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.exit_app)
+                .setMessage(R.string.are_you_sure)
+                .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        MainActivity.super.onBackPressed();
+                    }
+                })
+                .show();
     }
 
     @Override
-    public void onQuoteRealmClick(String quote) {
-        // TODO: 28.07.17 delete from realm
+    public void onQuoteServerClick(View view, final Quote quote) {
+        Snackbar.make(view, R.string.add_quote, Snackbar.LENGTH_LONG)
+                .setAction(R.string.yes, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        addQuoteToFavorites(quote);
+                    }
+                })
+                .show();
     }
+
+    @Override
+    public void onQuoteRealmClick(View view, final Quote quote) {
+        Snackbar.make(view, R.string.remove_quote, Snackbar.LENGTH_LONG)
+                .setAction(R.string.yes, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        removeQuoteFromFavorites(quote);
+                        showMessagePullToRefresh();
+                    }
+                })
+                .show();
+    }
+
+    //region private methods
 
     private void initUI() {
         initToolbar();
@@ -99,6 +136,7 @@ public class MainActivity extends AppCompatActivity implements
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         saveSettings(countEditText.getText().toString(), famousButton.isChecked());
+                        showMessagePullToRefresh();
                     }
                 })
                 .setView(view)
@@ -109,4 +147,30 @@ public class MainActivity extends AppCompatActivity implements
         Utils.writeQuotesCount(this, count);
         Utils.writeIsFamousChecked(this, isFamousChecked);
     }
+
+    private void addQuoteToFavorites(Quote quote) {
+        mRealm.beginTransaction();
+        Quote newQuote = mRealm.createObject(Quote.class);
+        newQuote.setAuthor(quote.getAuthor());
+        newQuote.setQuote(quote.getQuote());
+        mRealm.commitTransaction();
+    }
+
+    private void removeQuoteFromFavorites(final Quote quote) {
+        mRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                Quote quote1 = realm.where(Quote.class)
+                        .equalTo("quote", quote.getQuote())
+                        .findFirst();
+                quote1.removeFromRealm();
+            }
+        });
+    }
+
+    private void showMessagePullToRefresh() {
+        Toast.makeText(getApplicationContext(), R.string.pull_to_refresh, Toast.LENGTH_LONG).show();
+    }
+
+    //endregion
 }
