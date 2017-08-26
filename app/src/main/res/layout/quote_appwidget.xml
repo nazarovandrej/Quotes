@@ -14,7 +14,7 @@
         android:layout_toLeftOf="@+id/get_button"
         android:fontFamily="serif"
         android:padding="@dimen/padding_xsmall"
-        android:text="@string/tap_to_update"
+        android:text="@string/no_quotes"
         android:textAppearance="@style/Base.TextAppearance.AppCompat.Body1"
         android:textColor="@color/white"
         android:textStyle="italic"

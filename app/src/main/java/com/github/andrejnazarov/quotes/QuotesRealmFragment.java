@@ -18,7 +18,7 @@ import io.realm.Realm;
  * @author Nazarov on 28.07.17.
  */
 
-public class QuotesRealmFragment extends BasicFragment implements QuoteClickListener{
+public class QuotesRealmFragment extends BasicFragment implements QuoteClickListener {
 
     private OnQuoteRealmClickListener mListener;
     private Realm mRealm;
@@ -30,12 +30,7 @@ public class QuotesRealmFragment extends BasicFragment implements QuoteClickList
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnQuoteRealmClickListener) {
-            mListener = (OnQuoteRealmClickListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnQuoteRealmClickListener");
-        }
+        mListener = (OnQuoteRealmClickListener) getActivity();
     }
 
     @Override
