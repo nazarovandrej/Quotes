@@ -11,12 +11,14 @@ import android.widget.Toast;
 import com.github.andrejnazarov.quotes.adapter.QuoteAdapter;
 import com.github.andrejnazarov.quotes.adapter.QuoteClickListener;
 import com.github.andrejnazarov.quotes.bean.Quote;
-import com.github.andrejnazarov.quotes.net.ApiClient;
+import com.github.andrejnazarov.quotes.dagger.QuoteApplication;
 import com.github.andrejnazarov.quotes.net.QuoteService;
-import com.github.andrejnazarov.quotes.utils.Utils;
+import com.github.andrejnazarov.quotes.utils.SharedPrefManager;
 
 import java.util.Collections;
 import java.util.List;
+
+import javax.inject.Inject;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -31,8 +33,13 @@ import static com.github.andrejnazarov.quotes.net.Categories.MOVIES;
 
 public class QuotesServerFragment extends BasicFragment implements QuoteClickListener {
 
+    @Inject
+    QuoteService mService;
+
+    @Inject
+    SharedPrefManager mPrefManager;
+
     private OnQuoteServerClickListener mListener;
-    private QuoteService mService;
     private boolean mIsFirstTime;
 
     public static QuotesServerFragment newInstance() {
@@ -42,13 +49,15 @@ public class QuotesServerFragment extends BasicFragment implements QuoteClickLis
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        ((QuoteApplication) getActivity().getApplication())
+                .getNetComponent()
+                .inject(this);
         mListener = (OnQuoteServerClickListener) getActivity();
     }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mService = ApiClient.getClient().create(QuoteService.class);
         mIsFirstTime = true;
     }
 
@@ -77,9 +86,9 @@ public class QuotesServerFragment extends BasicFragment implements QuoteClickLis
     }
 
     private void getDataFromServer() {
-        String category = Utils.readIsFamousChecked(getActivity()) ? FAMOUS : MOVIES;
-        int count = Utils.readQuotesCount(getActivity());
-        if (Utils.hasConnection(getContext())) {
+        String category = mPrefManager.readIsFamousChecked() ? FAMOUS : MOVIES;
+        int count = mPrefManager.readQuotesCount();
+        if (mPrefManager.hasConnection(getContext())) {
             if (count == 1) {
                 getOneQuote(category);
             } else {

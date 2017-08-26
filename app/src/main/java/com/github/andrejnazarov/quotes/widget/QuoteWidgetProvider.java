@@ -11,9 +11,11 @@ import android.widget.RemoteViews;
 
 import com.github.andrejnazarov.quotes.R;
 import com.github.andrejnazarov.quotes.bean.Quote;
-import com.github.andrejnazarov.quotes.net.ApiClient;
+import com.github.andrejnazarov.quotes.dagger.QuoteApplication;
 import com.github.andrejnazarov.quotes.net.QuoteService;
-import com.github.andrejnazarov.quotes.utils.Utils;
+import com.github.andrejnazarov.quotes.utils.SharedPrefManager;
+
+import javax.inject.Inject;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -29,8 +31,21 @@ import static com.github.andrejnazarov.quotes.net.Categories.FAMOUS;
 
 public class QuoteWidgetProvider extends AppWidgetProvider {
 
+    @Inject
+    QuoteService mService;
+
+    @Inject
+    SharedPrefManager mPrefManager;
+
+    @Inject
+    Realm mRealm;
+
     @Override
     public void onUpdate(final Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+
+        ((QuoteApplication) context.getApplicationContext())
+                .getNetComponent()
+                .inject(this);
 
         Intent intent = new Intent(context, QuoteWidgetProvider.class);
         intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
@@ -45,12 +60,10 @@ public class QuoteWidgetProvider extends AppWidgetProvider {
         final ComponentName componentName = new ComponentName(context, QuoteWidgetProvider.class);
         manager.updateAppWidget(componentName, views);
 
-        Realm realm = Realm.getInstance(context);
-        RealmResults<Quote> quotes = realm.allObjects(Quote.class);
+        RealmResults<Quote> quotes = mRealm.allObjects(Quote.class);
 
-        if (Utils.hasConnection(context)) {
-            QuoteService service = ApiClient.getClient().create(QuoteService.class);
-            Call<Quote> call = service.getQuote(FAMOUS, 1);
+        if (mPrefManager.hasConnection(context)) {
+            Call<Quote> call = mService.getQuote(FAMOUS, 1);
             call.enqueue(new Callback<Quote>() {
                 @Override
                 public void onResponse(@NonNull Call<Quote> call, @NonNull Response<Quote> response) {
@@ -68,7 +81,7 @@ public class QuoteWidgetProvider extends AppWidgetProvider {
                 }
             });
         } else if (quotes != null && !quotes.isEmpty()) {
-            int randomIndex = Utils.generateRandomNumber(0, quotes.size());
+            int randomIndex = mPrefManager.generateRandomNumber(0, quotes.size());
             Quote quote = quotes.get(randomIndex);
             views.setTextViewText(R.id.quote_text_view, quote.getQuote());
             views.setTextViewText(R.id.author_text_view, quote.getAuthor());

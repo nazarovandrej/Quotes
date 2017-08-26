@@ -11,7 +11,7 @@ public class Categories {
     @StringDef({FAMOUS,
             MOVIES})
 
-    public @interface Category{
+    public @interface Category {
     }
 
     public static final String FAMOUS = "famous";

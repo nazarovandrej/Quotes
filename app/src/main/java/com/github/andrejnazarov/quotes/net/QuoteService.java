@@ -23,6 +23,6 @@ public interface QuoteService {
     @Headers("X-Mashape-Key: ttUbmOF3RImshnnF61GVRWimePq6p1AFKAbjsnvHlCahKC3hQd")
     @GET("/")
     Call<Quote> getQuote(@Query("cat") @Categories.Category String cat,
-                                    @Query("count") int count);
+                         @Query("count") int count);
 
 }
