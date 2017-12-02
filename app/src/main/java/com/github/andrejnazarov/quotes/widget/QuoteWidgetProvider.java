@@ -1,5 +1,6 @@
 package com.github.andrejnazarov.quotes.widget;
 
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
@@ -7,8 +8,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.widget.RemoteViews;
 
+import com.github.andrejnazarov.quotes.MainActivity;
 import com.github.andrejnazarov.quotes.R;
 import com.github.andrejnazarov.quotes.bean.Quote;
 import com.github.andrejnazarov.quotes.dagger.QuoteApplication;
@@ -72,6 +76,7 @@ public class QuoteWidgetProvider extends AppWidgetProvider {
                         views.setTextViewText(R.id.quote_text_view, quote.getQuote());
                         views.setTextViewText(R.id.author_text_view, quote.getAuthor());
                         manager.updateAppWidget(componentName, views);
+                        makeNotification(context, quote.getAuthor(), quote.getQuote());
                     }
                 }
 
@@ -86,7 +91,28 @@ public class QuoteWidgetProvider extends AppWidgetProvider {
             views.setTextViewText(R.id.quote_text_view, quote.getQuote());
             views.setTextViewText(R.id.author_text_view, quote.getAuthor());
             manager.updateAppWidget(componentName, views);
+            makeNotification(context, quote.getAuthor(), quote.getQuote());
         }
         super.onUpdate(context, appWidgetManager, appWidgetIds);
+    }
+
+    private void makeNotification(Context context, String title, String message) {
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(context)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle(title)
+                        .setContentText(message);
+        Intent resultIntent = new Intent(context, MainActivity.class);
+
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
+        stackBuilder.addParentStack(MainActivity.class);
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (mNotificationManager != null) {
+            mNotificationManager.notify(123, mBuilder.build());
+        }
     }
 }
